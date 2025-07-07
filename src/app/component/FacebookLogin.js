@@ -8,7 +8,7 @@ export default function FacebookLogin() {
     // Load SDK
     window.fbAsyncInit = function () {
       FB.init({
-        appId: "YOUR_APP_ID", // Replace with your app ID
+        appId: "2145673955940333", // Replace with your app ID
         cookie: true,
         xfbml: true,
         version: "v19.0",
