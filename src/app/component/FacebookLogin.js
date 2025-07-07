@@ -2,45 +2,55 @@
 import { useEffect, useState } from "react";
 
 export default function FacebookLogin() {
-  const [isFBLoaded, setIsFBLoaded] = useState(false);
+  const [isFBReady, setIsFBReady] = useState(false);
 
   useEffect(() => {
-    // Load SDK
+    // Wait for FB SDK to load and initialize
     window.fbAsyncInit = function () {
       FB.init({
-        appId: "2145673955940333", // Replace with your app ID
+        appId: "2145673955940333", // ✅ Your actual app ID
         cookie: true,
         xfbml: true,
         version: "v19.0",
       });
-
-      setIsFBLoaded(true); // SDK is ready
+      setIsFBReady(true); // Mark SDK ready
     };
 
-    // Inject Facebook SDK script
+    // Inject SDK script (if not already)
     if (!document.getElementById("facebook-jssdk")) {
-      const js = document.createElement("script");
-      js.id = "facebook-jssdk";
-      js.src = "https://connect.facebook.net/en_US/sdk.js";
-      document.body.appendChild(js);
+      const script = document.createElement("script");
+      script.id = "facebook-jssdk";
+      script.src = "https://connect.facebook.net/en_US/sdk.js";
+      document.body.appendChild(script);
     }
+
+    // Fallback in case fbAsyncInit is skipped
+    const interval = setInterval(() => {
+      if (window.FB) {
+        clearInterval(interval);
+        setIsFBReady(true);
+      }
+    }, 500);
+
+    return () => clearInterval(interval);
   }, []);
 
   const handleFacebookLogin = () => {
-    if (!isFBLoaded) {
-      alert("Facebook SDK not ready yet. Please wait...");
+    if (!window.FB || !isFBReady) {
+      alert("Facebook SDK is not ready yet.");
       return;
     }
 
-    FB.login(
+    window.FB.login(
       function (response) {
         if (response.authResponse) {
-          FB.api("/me", { fields: "name,email" }, function (userInfo) {
+          // Fetch user info
+          window.FB.api("/me", { fields: "name,email,picture" }, function (userInfo) {
             alert(`Welcome, ${userInfo.name}`);
-            console.log(userInfo);
+            console.log("User Info:", userInfo);
           });
         } else {
-          console.log("User cancelled login.");
+          console.log("User cancelled login or failed authorization.");
         }
       },
       { scope: "public_profile,email" }
@@ -56,6 +66,7 @@ export default function FacebookLogin() {
         color: "#fff",
         border: "none",
         borderRadius: "4px",
+        cursor: "pointer",
       }}
     >
       Login with Facebook
