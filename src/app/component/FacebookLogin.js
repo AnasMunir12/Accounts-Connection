@@ -5,61 +5,61 @@ export default function FacebookLogin() {
   const [isFBReady, setIsFBReady] = useState(false);
 
   useEffect(() => {
-    // Wait for FB SDK to load and initialize
-    window.fbAsyncInit = function () {
-      FB.init({
-        appId: "2145673955940333", // ✅ Your actual app ID
-        cookie: true,
-        xfbml: true,
-        version: "v19.0",
-      });
-      setIsFBReady(true); // Mark SDK ready
-    };
-
-    // Inject SDK script (if not already)
-    if (!document.getElementById("facebook-jssdk")) {
-      const script = document.createElement("script");
-      script.id = "facebook-jssdk";
-      script.src = "https://connect.facebook.net/en_US/sdk.js";
-      document.body.appendChild(script);
-    }
-
-    // Fallback in case fbAsyncInit is skipped
-    const interval = setInterval(() => {
-      if (window.FB) {
-        clearInterval(interval);
-        setIsFBReady(true);
-      }
-    }, 500);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const handleFacebookLogin = () => {
-    if (!window.FB || !isFBReady) {
-      alert("Facebook SDK is not ready yet.");
+    // Check if SDK is already loaded
+    if (window.FB) {
+      setIsFBReady(true);
       return;
     }
 
-    window.FB.login(
-      function (response) {
-        if (response.authResponse) {
-          // Fetch user info
-          window.FB.api("/me", { fields: "name,email,picture" }, function (userInfo) {
-            alert(`Welcome, ${userInfo.name}`);
-            console.log("User Info:", userInfo);
-          });
-        } else {
-          console.log("User cancelled login or failed authorization.");
-        }
-      },
-      { scope: "public_profile,email" }
-    );
+    // Initialize FB SDK
+    window.fbAsyncInit = function() {
+      FB.init({
+        appId: "2145673955940333",
+        cookie: true,
+        xfbml: true,
+        version: "v19.0"
+      });
+      setIsFBReady(true);
+    };
+
+    // Load SDK script
+    (function(d, s, id) {
+      var js, fjs = d.getElementsByTagName(s)[0];
+      if (d.getElementById(id)) return;
+      js = d.createElement(s); js.id = id;
+      js.src = "https://connect.facebook.net/en_US/sdk.js";
+      fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+
+    return () => {
+      // Cleanup if needed
+      delete window.fbAsyncInit;
+    };
+  }, []);
+
+  const handleFacebookLogin = () => {
+    if (!isFBReady) {
+      alert("Facebook SDK is still loading. Please try again.");
+      return;
+    }
+
+    FB.login(response => {
+      if (response.authResponse) {
+        FB.api('/me', { fields: 'name,email,picture' }, userInfo => {
+          console.log("User Info:", userInfo);
+          alert(`Welcome, ${userInfo.name}!`);
+          // Here you would typically send the auth data to your backend
+        });
+      } else {
+        console.log("User cancelled login or didn't authorize.");
+      }
+    }, { scope: 'public_profile,email' });
   };
 
   return (
     <button
       onClick={handleFacebookLogin}
+      disabled={!isFBReady}
       style={{
         padding: "10px 20px",
         background: "#4267B2",
@@ -67,9 +67,10 @@ export default function FacebookLogin() {
         border: "none",
         borderRadius: "4px",
         cursor: "pointer",
+        opacity: isFBReady ? 1 : 0.7
       }}
     >
-      Login with Facebook
+      {isFBReady ? "Login with Facebook" : "Loading Facebook..."}
     </button>
   );
 }
